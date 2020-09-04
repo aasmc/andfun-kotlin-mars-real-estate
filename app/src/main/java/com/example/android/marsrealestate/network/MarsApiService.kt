@@ -17,20 +17,30 @@
 
 package com.example.android.marsrealestate.network
 
-import retrofit2.Call
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import retrofit2.Retrofit
-import retrofit2.converter.scalars.ScalarsConverterFactory
+import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.Query
 
 private const val BASE_URL = "https://mars.udacity.com/"
 
 /**
+ * Enum to filter MarsProperties by type: rent, buy, all
+ */
+enum class MarsApiFilter(val value: String) { SHOW_RENT("rent"), SHOW_BUY("buy"), SHOW_ALL("all") }
+
+private val moshi = Moshi.Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
+
+/**
  * Build retrofit service by using retrofit builder
- * Add ScalarsConverterFactory converter factory
  * Add base URL
  */
 private val retrofit = Retrofit.Builder()
-        .addConverterFactory(ScalarsConverterFactory.create())
+        .addConverterFactory(MoshiConverterFactory.create(moshi))
         .baseUrl(BASE_URL)
         .build()
 
@@ -40,10 +50,12 @@ private val retrofit = Retrofit.Builder()
 interface MarsApiService {
     /**
      * Gets realestate properties
-     * return Call object
+     * @param type is used to filter properties by type. Annotation @Query("filter") appends
+     * the URL with ?filter=type - to filter the properties
+     *
      */
     @GET("realestate")
-    fun getProperties() : Call<String>
+    suspend fun getPropertiesAsync(@Query("filter") type: String): List<MarsProperty>
 }
 
 /**

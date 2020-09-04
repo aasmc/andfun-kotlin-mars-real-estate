@@ -21,8 +21,11 @@ import android.os.Bundle
 import android.view.*
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.fragment.findNavController
 import com.example.android.marsrealestate.R
 import com.example.android.marsrealestate.databinding.FragmentOverviewBinding
+import com.example.android.marsrealestate.databinding.GridViewItemBinding
+import com.example.android.marsrealestate.network.MarsApiFilter
 
 /**
  * This fragment shows the the status of the Mars real-estate web services transaction.
@@ -42,6 +45,7 @@ class OverviewFragment : Fragment() {
      */
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
+//        val binding = FragmentOverviewBinding.inflate(inflater)
         val binding = FragmentOverviewBinding.inflate(inflater)
 
         // Allows Data Binding to Observe LiveData with the lifecycle of this Fragment
@@ -49,6 +53,25 @@ class OverviewFragment : Fragment() {
 
         // Giving the binding access to the OverviewViewModel
         binding.viewModel = viewModel
+
+        // Set the PhotosGrid recyclerView adapter to PhotoGridAdapter
+        binding.photosGrid.adapter = PhotoGridAdapter(PhotoGridAdapter.OnClickListener {
+            // pass lambda as a parameter. 'it' - is the argument of passed lambda
+            // viewModel changes the value of _navigateToSelectedProperty MutableLiveData to the clicked MarsProperty
+            // fragment observes the changes
+            viewModel.displayPropertyDetails(it)
+        })
+
+        // observe the changes in the navigateToSelectedProperty event
+        viewModel.navigateToSelectedProperty.observe(viewLifecycleOwner) {
+            // if the property was clicked then it was passed to the navigateToSelectedProperty, so it is not null
+            if (null != it) {
+                // navigating to DetailFragment and passing MarsProperty as an argument using safeArgs plugin
+                this.findNavController().navigate(OverviewFragmentDirections.actionShowDetail(it))
+                // need to call the method to prevent unwanted navigations
+                viewModel.displayPropertyDetailsComplete()
+            }
+        }
 
         setHasOptionsMenu(true)
         return binding.root
@@ -61,4 +84,17 @@ class OverviewFragment : Fragment() {
         inflater.inflate(R.menu.overflow_menu, menu)
         super.onCreateOptionsMenu(menu, inflater)
     }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        // fetches properties from server depending on the filter
+        viewModel.updateFilter(
+                when (item.itemId) {
+                    R.id.show_buy_menu -> MarsApiFilter.SHOW_BUY // if buy menu is clicked
+                    R.id.show_rent_menu -> MarsApiFilter.SHOW_RENT // if rent menu is clicked
+                    else -> MarsApiFilter.SHOW_ALL
+                }
+        )
+        return true
+    }
+
 }

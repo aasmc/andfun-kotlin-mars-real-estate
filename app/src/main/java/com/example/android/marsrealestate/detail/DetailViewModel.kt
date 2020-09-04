@@ -17,13 +17,52 @@
 package com.example.android.marsrealestate.detail
 
 import android.app.Application
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.*
+import com.example.android.marsrealestate.R
 import com.example.android.marsrealestate.detail.DetailFragment
 import com.example.android.marsrealestate.network.MarsProperty
 
 /**
  * The [ViewModel] that is associated with the [DetailFragment].
  */
-class DetailViewModel(@Suppress("UNUSED_PARAMETER")marsProperty: MarsProperty, app: Application) : AndroidViewModel(app) {
+class DetailViewModel(marsProperty: MarsProperty, app: Application) : AndroidViewModel(app) {
+
+    /**
+     * Encapsulated property to be observed by DataBinding
+     */
+    private val _selectedProperty = MutableLiveData<MarsProperty>()
+    val selectedProperty: LiveData<MarsProperty>
+        get() = _selectedProperty
+
+    /**
+     * Initializes the selected property to the one passed as a parameter
+     */
+    init {
+        _selectedProperty.value = marsProperty
+    }
+
+    /**
+     * Transforms price of the selected MarsProperty to be correctly displayed depending on the
+     * isRental property. Uses prepared templates in string.xml
+     */
+    val displayPropertyPrice = Transformations.map(selectedProperty) {
+        app.applicationContext.getString(
+                when (it.isRental) {
+                    true -> R.string.display_price_monthly_rental // template for rental properties
+                    false -> R.string.display_price // template for properties for sale
+                },
+                it.price) // need second parameter because it is defined in the string.xml template
+    }
+
+    val displayPropertyType = Transformations.map(selectedProperty) {
+        app.applicationContext.getString(
+                R.string.display_type, // template for the display type
+                app.applicationContext.getString( // need to be called the second time to fetch strings from resources because the template needs two parameters
+                        when (it.isRental) {
+                            true -> R.string.type_rent // if the type is rent
+                            false -> R.string.type_sale // if the type is sale
+                        }
+                )
+        )
+    }
 }

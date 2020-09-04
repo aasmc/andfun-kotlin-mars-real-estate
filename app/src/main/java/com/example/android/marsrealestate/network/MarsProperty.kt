@@ -17,4 +17,22 @@
 
 package com.example.android.marsrealestate.network
 
-class MarsProperty()
+import android.os.Parcelable
+import com.squareup.moshi.Json
+import kotlinx.android.parcel.Parcelize
+
+/**
+ * Data class to hold Property converted from JSON
+ * Names of properties of the class must either correspond to the names of keys in JSON
+ * Or we need to annotate them @Json(name="property_name")
+ */
+@Parcelize
+data class MarsProperty(
+        val id: String,
+        @Json(name = "img_src") val imgSrcUrl: String,
+        val type: String,
+        val price: Double
+) : Parcelable {
+    val isRental
+        get() = type == "rent"
+}
